@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { CarService } from './../CarService';
 import { AgGridReact } from 'ag-grid-react';
 import { Card, Grid, TextField, InputAdornment, Tooltip } from '@material-ui/core';
-import { Search, DeleteForeverOutlined } from '@material-ui/icons';
+import { Search, DeleteForeverOutlined, GetAppOutlined } from '@material-ui/icons';
 import 'ag-grid-community/dist/styles/ag-grid.css';
 import 'ag-grid-community/dist/styles/ag-theme-material.css';
 import IconButton from '@material-ui/core/IconButton';
@@ -12,9 +12,12 @@ import EditCar from './EditCar';
 export default function CarList() {
 	const [ cars, setCars ] = useState([]);
 
+	const [ quickFilter, setQuickFilter ] = useState('');
+	const ref = useRef();
+
 	useEffect(() => getCars(), []);
 
-	const getCars = async () => CarService.GetAll().then((data) => setCars(data));
+	const getCars = () => CarService.GetAll().then((data) => setCars(data._embedded.cars));
 
 	const deleteCar = (url) => {
 		if (window.confirm('Are you Sure?')) {
@@ -22,11 +25,18 @@ export default function CarList() {
 		}
 	};
 
-	const addCar = (car) => CarService.Add(car).then(getCars());
-	const updateCar = (car) => CarService.Update(car).then(getCars());
+	const addCar = (car) => CarService.Add(car).then(getCars);
+	// Updating row data causes a warning "unstable_flushDiscreteUpdates"
+	// Set to be fixed in the next ag-Grid update
+	// (issue: AG-4049) https://www.ag-grid.com/ag-grid-pipeline/
+	const updateCar = (car) => CarService.Update(car).then(() => getCars());
+
+	const exportToCsv = () => {
+		ref.current.exportDataAsCsv();
+	};
 
 	const actionsCellRenderer = (params) => (
-		<div>
+		<Fragment>
 			<Tooltip title="Delete">
 				<IconButton
 					onClick={() => deleteCar(params.data._links.self.href)}
@@ -36,7 +46,7 @@ export default function CarList() {
 				</IconButton>
 			</Tooltip>
 			<EditCar self={params.data} updateCar={updateCar} />
-		</div>
+		</Fragment>
 	);
 
 	const columns = [
@@ -52,8 +62,6 @@ export default function CarList() {
 		}
 	];
 
-	const [ quickFilter, setQuickFilter ] = useState('');
-	const ref = useRef();
 	const gridOptions = {
 		defaultColDef: {
 			flex: 1,
@@ -68,7 +76,7 @@ export default function CarList() {
 	};
 
 	return (
-		<div>
+		<Fragment>
 			<Card
 				className="ag-theme-material"
 				style={{
@@ -76,23 +84,44 @@ export default function CarList() {
 					margin: 30
 				}}
 			>
-				<Grid container>
-					<TextField
+				<Grid container direction="row" justify="space-between">
+					<Grid item>
+						<TextField
+							style={{
+								margin: 15
+							}}
+							value={quickFilter}
+							onChange={(e) => setQuickFilter(e.target.value)}
+							placeholder="Search"
+							InputProps={{
+								startAdornment: (
+									<InputAdornment>
+										<Search />
+									</InputAdornment>
+								)
+							}}
+						/>
+					</Grid>
+					<Grid
+						item
+						style={{
+							margin: 5
+						}}
+					>
+						<AddCar addCar={addCar} />
+					</Grid>
+					<Grid
+						item
 						style={{
 							margin: 10
 						}}
-						value={quickFilter}
-						onChange={(e) => setQuickFilter(e.target.value)}
-						placeholder="Search"
-						InputProps={{
-							startAdornment: (
-								<InputAdornment>
-									<Search />
-								</InputAdornment>
-							)
-						}}
-					/>
-					<AddCar addCar={addCar} />
+					>
+						<Tooltip title="Export as CSV">
+							<IconButton onClick={exportToCsv}>
+								<GetAppOutlined />
+							</IconButton>
+						</Tooltip>
+					</Grid>
 				</Grid>
 				<AgGridReact
 					domLayout="autoHeight"
@@ -104,6 +133,6 @@ export default function CarList() {
 					rowData={cars}
 				/>
 			</Card>
-		</div>
+		</Fragment>
 	);
 }

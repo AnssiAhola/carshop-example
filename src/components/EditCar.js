@@ -13,9 +13,7 @@ export default function EditCar({ self, updateCar }) {
 	const [ open, setOpen ] = useState(false);
 	const [ car, setCar ] = useState(self);
 
-	const handleClickOpen = () => setOpen(true);
-
-	const handleClose = () => setOpen(false);
+	const toggleOpen = () => setOpen((prevState) => !prevState);
 
 	const handleInputChange = (e) => {
 		setCar({ ...car, [e.target.name]: e.target.value });
@@ -23,17 +21,17 @@ export default function EditCar({ self, updateCar }) {
 
 	const handleUpdateEvent = () => {
 		updateCar(car);
-		handleClose();
+		toggleOpen();
 	};
 
 	return (
 		<Fragment>
-			<Tooltip onClick={handleClickOpen} title="Edit">
+			<Tooltip onClick={toggleOpen} title="Edit">
 				<IconButton style={{ padding: 4 }}>
 					<Edit />
 				</IconButton>
 			</Tooltip>
-			<Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
+			<Dialog open={open} onClose={toggleOpen} aria-labelledby="form-dialog-title">
 				<DialogTitle id="form-dialog-title">Edit Car</DialogTitle>
 				<DialogContent>
 					<TextField
@@ -93,7 +91,7 @@ export default function EditCar({ self, updateCar }) {
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={handleClose} color="secondary">
+					<Button onClick={toggleOpen} color="secondary">
 						Cancel
 					</Button>
 					<Button onClick={handleUpdateEvent} color="primary">
